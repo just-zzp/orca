@@ -1,15 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
+import { useSourceControlSectionCollapseState } from './section-collapse-state'
 import { resolveSourceControlGroupOrder } from '../listing/section-order'
 import { getNextSourceControlViewMode } from './header-toolbar'
 import { normalizeSourceControlViewMode } from '../commit/commit-drafts'
 import type { SourceControlStoreActions } from '../listing/use-store-actions'
 import type { SourceControlWorktreeContext } from '../listing/use-worktree-context'
-
-const DEFAULT_COLLAPSED_SECTIONS = ['history'] as const
-
-function createDefaultCollapsedSections(): Set<string> {
-  return new Set(DEFAULT_COLLAPSED_SECTIONS)
-}
 
 /**
  * Local presentation state for the Source Control panel: filter, collapsed sections/directories,
@@ -18,10 +14,12 @@ function createDefaultCollapsedSections(): Set<string> {
  */
 export function useSourceControlPanelViewState({
   activeWorktreeId,
+  activeWorktree,
   settings,
   updateSettings
 }: {
   activeWorktreeId: string | null
+  activeWorktree: SourceControlWorktreeContext['activeWorktree']
   settings: SourceControlWorktreeContext['settings']
   updateSettings: SourceControlStoreActions['updateSettings']
 }) {
@@ -30,9 +28,14 @@ export function useSourceControlPanelViewState({
   const [fileListScrollElement, setFileListScrollElement] = useState<HTMLDivElement | null>(null)
   const isMac = useMemo(() => navigator.userAgent.includes('Mac'), [])
   const [filterExpanded, setFilterExpanded] = useState(false)
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
-    createDefaultCollapsedSections
-  )
+  const sectionStateKey = activeWorktree
+    ? JSON.stringify([
+        activeWorktree.runtimeOwnerEnvironmentId ?? null,
+        activeWorktree.identity?.key ?? getWorktreeHostIdentity(activeWorktree),
+        activeWorktree.instanceId ?? null
+      ])
+    : null
+  const { collapsedSections, toggleSection } = useSourceControlSectionCollapseState(sectionStateKey)
   const persistedSourceControlViewMode = normalizeSourceControlViewMode(
     settings?.sourceControlViewMode
   )
@@ -57,25 +60,12 @@ export function useSourceControlPanelViewState({
   if (viewStateWorktreeId !== activeWorktreeId) {
     setViewStateWorktreeId(activeWorktreeId)
     setFilterExpanded(false)
-    setCollapsedSections(createDefaultCollapsedSections())
     setCollapsedTreeDirs(new Set())
     setBaseRefDialogOpen(false)
     // Why: don't reset defaultBaseRef here — it's repo-scoped (resolved on activeRepo change); resetting would clobber non-main defaults.
     setFilterQuery('')
     // Why: don't reset commit-in-flight state — it's per-worktree; resetting would re-enable Commit for an incoming worktree mid-commit.
   }
-
-  const toggleSection = useCallback((section: string) => {
-    setCollapsedSections((prev) => {
-      const next = new Set(prev)
-      if (next.has(section)) {
-        next.delete(section)
-      } else {
-        next.add(section)
-      }
-      return next
-    })
-  }, [])
 
   const toggleTreeDir = useCallback((key: string) => {
     setCollapsedTreeDirs((prev) => {
