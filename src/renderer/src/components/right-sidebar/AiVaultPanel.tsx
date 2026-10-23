@@ -84,7 +84,6 @@ export default function AiVaultPanel({
   const [focusSearchRequestId, setFocusSearchRequestId] = useState(0)
   const listKeyboardRef = useRef<AiVaultSessionListKeyboard>(null)
   const keyboardRows = onSessionOpened !== undefined
-  // Why: scope depends on current workspace/project availability, so only stable view options persist.
   const {
     agents,
     sort,
@@ -101,7 +100,6 @@ export default function AiVaultPanel({
     setAllAgentsEnabled,
     resetViewOptions
   } = usePersistedAiVaultViewOptions(initialAgents)
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set())
   const { executionHostScope, onExecutionHostScopeChange, hostScopeOptions } =
     useAiVaultPanelHostScope(activeWorktreeId ?? null, resumeTargetState)
   const activeWorktreePath = activeWorktree?.path ?? null
@@ -123,9 +121,18 @@ export default function AiVaultPanel({
     [activeRepo, activeWorktree, allWorktrees, projectHostSetupProjection, repos]
   )
   const activeProjectKey = projectScopeContext.activeProjectKey
-  const { scope, handleScopeChange } = useAiVaultPanelScope({
+  const {
+    scope,
+    handleScopeChange,
+    collapsedGroups,
+    toggleGroup,
+    expandedSessionIds,
+    toggleSessionDetails,
+    expandSessionDetails
+  } = useAiVaultPanelScope({
     activeProjectKey,
-    activeWorktreePath
+    activeWorktreePath,
+    local: workspace !== undefined
   })
   const projectLabelByKey = projectScopeContext.projectLabelByKey
   // Sent to the scanner so scoped views surface sessions older than the global cap.
@@ -240,18 +247,6 @@ export default function AiVaultPanel({
     setFocusSearchRequestId
   })
 
-  const toggleGroup = useCallback((key: string) => {
-    setCollapsedGroups((current) => {
-      const next = new Set(current)
-      if (next.has(key)) {
-        next.delete(key)
-      } else {
-        next.add(key)
-      }
-      return next
-    })
-  }, [])
-
   const requestDelete = useAiVaultSessionDeleteAction({
     refresh,
     onDeleted: search.onDeleted
@@ -328,6 +323,7 @@ export default function AiVaultPanel({
             searchHitHostLabels={searchHitHostLabels}
             groups={groups}
             collapsedGroups={collapsedGroups}
+            expandedSessionIds={expandedSessionIds}
             loading={searching ? search.loading : loading}
             scopePending={!searching && scopePending}
             scanProgressShown={stripProgress !== null}
@@ -344,6 +340,8 @@ export default function AiVaultPanel({
             getSessionLiveState={paneActions.getSessionLiveState}
             getWorktreeInfo={getSessionWorktreeInfo}
             onToggleGroup={toggleGroup}
+            onToggleSessionDetails={toggleSessionDetails}
+            onExpandSessionDetails={expandSessionDetails}
             keyboardRef={keyboardRows ? listKeyboardRef : undefined}
             query={query}
             resumeHere={resumeHere}

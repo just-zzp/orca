@@ -1,6 +1,6 @@
 import { SubagentExpansionProvider } from './ai-vault-subagent-expansion'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useCallback, useMemo, useRef, useState, type Ref } from 'react'
+import { useCallback, useMemo, useRef, type Ref } from 'react'
 import type { AgentStatusState } from '../../../../shared/agent-status-types'
 import type { AiVaultScope, AiVaultSession } from '../../../../shared/ai-vault-types'
 import type { AiVaultResumeStartup } from '@/lib/ai-vault-resume-command'
@@ -37,6 +37,7 @@ const VAULT_EXPANDED_SESSION_ROW_ESTIMATED_HEIGHT = 420
 export function AiVaultSessionVirtualList({
   groups,
   collapsedGroups,
+  expandedSessionIds,
   loading,
   scopePending = false,
   scanProgressShown = false,
@@ -54,6 +55,8 @@ export function AiVaultSessionVirtualList({
   getSessionResumeActions,
   getSessionResumeInChat,
   onToggleGroup,
+  onToggleSessionDetails,
+  onExpandSessionDetails,
   onJumpToOriginalPane,
   onJumpToWorktree,
   onResume,
@@ -75,6 +78,7 @@ export function AiVaultSessionVirtualList({
 }: {
   groups: readonly AiVaultSessionListGroup[]
   collapsedGroups: ReadonlySet<string>
+  expandedSessionIds: ReadonlySet<string>
   loading: boolean
   scopePending?: boolean
   /** The progress strip above names the scan, so the list does not repeat it. */
@@ -93,6 +97,8 @@ export function AiVaultSessionVirtualList({
   getSessionResumeActions: (session: AiVaultSession) => AiVaultSessionResumeActions
   getSessionResumeInChat: (session: AiVaultSession) => AiVaultResumeInChatEligibility
   onToggleGroup: (key: string) => void
+  onToggleSessionDetails: (sessionId: string) => void
+  onExpandSessionDetails: (sessionId: string) => void
   onJumpToOriginalPane: (session: AiVaultSession) => void
   onJumpToWorktree: (worktreeId: string) => void
   onResume: (session: AiVaultSession, worktreeId: string) => void
@@ -119,7 +125,6 @@ export function AiVaultSessionVirtualList({
   const listScrollRef = useRef<HTMLDivElement>(null)
   const stickyRangeStartIndexRef = useRef(0)
   const activeStickyHeaderIndexRef = useRef<number | null>(null)
-  const [expandedSessionIds, setExpandedSessionIds] = useState<Set<string>>(() => new Set())
 
   const vaultRows = useMemo(() => {
     const rows: AiVaultListRow[] = []
@@ -175,18 +180,6 @@ export function AiVaultSessionVirtualList({
     }
   })
 
-  const toggleSessionDetails = useCallback((sessionId: string) => {
-    setExpandedSessionIds((current) => {
-      const next = new Set(current)
-      if (next.has(sessionId)) {
-        next.delete(sessionId)
-      } else {
-        next.add(sessionId)
-      }
-      return next
-    })
-  }, [])
-
   // Why: the dialog stays up until the picked chat opens, and a second pick meanwhile would start
   // a second resume; each pick settles, so this never stays set.
   const pickInFlight = useRef(false)
@@ -223,7 +216,7 @@ export function AiVaultSessionVirtualList({
   // Enter resumes the row in the chat; a row that can't shows its details instead.
   const activateSession = (session: AiVaultSession, index: number): void => {
     if (!pickHere(session)) {
-      setExpandedSessionIds((current) => new Set(current).add(session.id))
+      onExpandSessionDetails(session.id)
       virtualizer.scrollToIndex(index)
     }
   }
@@ -302,7 +295,7 @@ export function AiVaultSessionVirtualList({
                 getSessionResumeActions={getSessionResumeActions}
                 getSessionResumeInChat={getSessionResumeInChat}
                 onToggleGroup={onToggleGroup}
-                onToggleSessionDetails={toggleSessionDetails}
+                onToggleSessionDetails={onToggleSessionDetails}
                 onJumpToOriginalPane={onJumpToOriginalPane}
                 onJumpToWorktree={onJumpToWorktree}
                 onResume={onResume}
@@ -322,7 +315,7 @@ export function AiVaultSessionVirtualList({
                   resumeHere
                     ? (session) => {
                         if (!pickHere(session)) {
-                          toggleSessionDetails(session.id)
+                          onToggleSessionDetails(session.id)
                         }
                       }
                     : undefined
