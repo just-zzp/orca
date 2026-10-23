@@ -136,7 +136,8 @@ function QuickTabBody({
     nameInputRef,
     submitQuick,
     createDisabled: formDisabled,
-    selectAddedProjectRepo
+    selectAddedProjectRepo,
+    selectAddedProjectGroup
   } = useComposerState({
     initialName: modalData.prefilledName ?? '',
     // Why: the modal is quick-create only now, so prompt-prefill state is
@@ -263,9 +264,10 @@ function QuickTabBody({
       open: addProjectOpen,
       onOpenChange: setAddProjectOpen,
       onProjectAdded: handleProjectAdded,
+      onProjectGroupImported: selectAddedProjectGroup,
       onCloseAutoFocus: handleAddProjectCloseAutoFocus
     }),
-    [addProjectOpen, handleAddProjectCloseAutoFocus, handleProjectAdded]
+    [addProjectOpen, handleAddProjectCloseAutoFocus, handleProjectAdded, selectAddedProjectGroup]
   )
   const selectedProjectOption = cardProps.projectOptions.find(
     (option) => option.id === cardProps.selectedProjectId
