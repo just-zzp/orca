@@ -84,6 +84,7 @@ export default function AiVaultPanel({
   const [focusSearchRequestId, setFocusSearchRequestId] = useState(0)
   const listKeyboardRef = useRef<AiVaultSessionListKeyboard>(null)
   const keyboardRows = onSessionOpened !== undefined
+  // Why: scope depends on current workspace/project availability, so only stable view options persist.
   const {
     agents,
     sort,
@@ -121,15 +122,7 @@ export default function AiVaultPanel({
     [activeRepo, activeWorktree, allWorktrees, projectHostSetupProjection, repos]
   )
   const activeProjectKey = projectScopeContext.activeProjectKey
-  const {
-    scope,
-    handleScopeChange,
-    collapsedGroups,
-    toggleGroup,
-    expandedSessionIds,
-    toggleSessionDetails,
-    expandSessionDetails
-  } = useAiVaultPanelScope({
+  const { scope, handleScopeChange, collapsedGroups, toggleGroup } = useAiVaultPanelScope({
     activeProjectKey,
     activeWorktreePath,
     local: workspace !== undefined
@@ -323,7 +316,6 @@ export default function AiVaultPanel({
             searchHitHostLabels={searchHitHostLabels}
             groups={groups}
             collapsedGroups={collapsedGroups}
-            expandedSessionIds={expandedSessionIds}
             loading={searching ? search.loading : loading}
             scopePending={!searching && scopePending}
             scanProgressShown={stripProgress !== null}
@@ -340,8 +332,6 @@ export default function AiVaultPanel({
             getSessionLiveState={paneActions.getSessionLiveState}
             getWorktreeInfo={getSessionWorktreeInfo}
             onToggleGroup={toggleGroup}
-            onToggleSessionDetails={toggleSessionDetails}
-            onExpandSessionDetails={expandSessionDetails}
             keyboardRef={keyboardRows ? listKeyboardRef : undefined}
             query={query}
             resumeHere={resumeHere}

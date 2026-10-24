@@ -121,7 +121,6 @@ vi.mock('@/runtime/runtime-layout-client', async (importOriginal) =>
 )
 
 import { AiVaultSessionVirtualList } from './AiVaultSessionVirtualList'
-import { useAiVaultPanelTransientState } from './ai-vault-panel-transient-state'
 import {
   drawTabsFromMain,
   type TabsDrawnFromMain
@@ -176,71 +175,65 @@ function renderList(
     onResume: vi.fn()
   }
   const groups = options.groups ?? [{ key: 'all', label: null, sessions }]
-  function List({ query }: { query: string }) {
-    const disclosure = useAiVaultPanelTransientState(true)
-    return (
-      <AiVaultSessionVirtualList
-        query={query}
-        groups={groups}
-        collapsedGroups={options.collapsedGroups ?? new Set()}
-        expandedSessionIds={disclosure.expandedSessionIds}
-        onToggleSessionDetails={disclosure.toggleSessionDetails}
-        onExpandSessionDetails={disclosure.expandSessionDetails}
-        loading={false}
-        sessionsCount={sessions.length}
-        filteredSessionsCount={sessions.length}
-        noAgentsSelected={false}
-        error={null}
-        vaultScope="workspace"
-        buildResumeStartup={() => ({ command: '' })}
-        getOriginalPaneTarget={() => null}
-        isStructuredSessionOpen={(s) => options.openSessionIds?.has(s.id) ?? false}
-        getSessionLiveState={() => null}
-        getWorktreeInfo={() => null}
-        getSessionResumeState={() => ({
-          blocked: false,
-          worktreeId: 'wt-1',
-          usesSessionWorktree: true
-        })}
-        getSessionResumeActions={() => ({
-          worktree: { worktreeId: null, disabled: true },
-          newTab: { worktreeId: 'wt-1', disabled: false }
-        })}
-        getSessionResumeInChat={(s) =>
-          (options.eligible?.(s) ?? true)
-            ? {
-                available: true,
-                workspaceId: options.resumeHere?.workspaceId ?? `own-${s.sessionId}`
-              }
-            : { available: false, reason: 'remote' }
-        }
-        onToggleGroup={vi.fn()}
-        onJumpToOriginalPane={calls.onJumpToOriginalPane}
-        onJumpToWorktree={vi.fn()}
-        onResume={calls.onResume}
-        onContinueInNewSession={vi.fn()}
-        onResumeInNewChat={calls.onResumeInNewChat}
-        onResumeInNewCli={vi.fn()}
-        onCopyResume={vi.fn()}
-        onCopyId={vi.fn()}
-        onCopyPath={vi.fn()}
-        onOpenLog={vi.fn()}
-        onRevealLog={vi.fn()}
-        onOpenCwd={vi.fn()}
-        onRequestDelete={vi.fn()}
-        keyboardRef={keyboard}
-        resumeHere={options.resumeHere}
-      />
-    )
-  }
-  const view = render(<List query="" />)
+  const list = (query: string) => (
+    <AiVaultSessionVirtualList
+      query={query}
+      groups={groups}
+      collapsedGroups={options.collapsedGroups ?? new Set()}
+      loading={false}
+      sessionsCount={sessions.length}
+      filteredSessionsCount={sessions.length}
+      noAgentsSelected={false}
+      error={null}
+      vaultScope="workspace"
+      buildResumeStartup={() => ({ command: '' })}
+      getOriginalPaneTarget={() => null}
+      isStructuredSessionOpen={(s) => options.openSessionIds?.has(s.id) ?? false}
+      getSessionLiveState={() => null}
+      getWorktreeInfo={() => null}
+      getSessionResumeState={() => ({
+        blocked: false,
+        worktreeId: 'wt-1',
+        usesSessionWorktree: true
+      })}
+      getSessionResumeActions={() => ({
+        worktree: { worktreeId: null, disabled: true },
+        newTab: { worktreeId: 'wt-1', disabled: false }
+      })}
+      getSessionResumeInChat={(s) =>
+        (options.eligible?.(s) ?? true)
+          ? {
+              available: true,
+              workspaceId: options.resumeHere?.workspaceId ?? `own-${s.sessionId}`
+            }
+          : { available: false, reason: 'remote' }
+      }
+      onToggleGroup={vi.fn()}
+      onJumpToOriginalPane={calls.onJumpToOriginalPane}
+      onJumpToWorktree={vi.fn()}
+      onResume={calls.onResume}
+      onContinueInNewSession={vi.fn()}
+      onResumeInNewChat={calls.onResumeInNewChat}
+      onResumeInNewCli={vi.fn()}
+      onCopyResume={vi.fn()}
+      onCopyId={vi.fn()}
+      onCopyPath={vi.fn()}
+      onOpenLog={vi.fn()}
+      onRevealLog={vi.fn()}
+      onOpenCwd={vi.fn()}
+      onRequestDelete={vi.fn()}
+      keyboardRef={keyboard}
+      resumeHere={options.resumeHere}
+    />
+  )
+  const view = render(list(''))
   const press = (key: string, repeat = false) => {
     const event = { key, repeat, preventDefault: vi.fn() }
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the handler reads only key, modifiers, repeat and preventDefault.
     act(() => keyboard.current?.handleKeyDown(event as unknown as KeyboardEvent<HTMLElement>))
     return event
   }
-  return { calls, press, search: (query: string) => view.rerender(<List query={query} />) }
+  return { calls, press, search: (query: string) => view.rerender(list(query)) }
 }
 
 function selectedTitle(): string | null {

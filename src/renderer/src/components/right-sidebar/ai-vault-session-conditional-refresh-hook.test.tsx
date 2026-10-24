@@ -7,7 +7,6 @@ import type { ExecutionHostScope } from '../../../../shared/execution-host'
 import { useAppStore } from '@/store'
 import { filterAiVaultSessions } from '../../../../shared/ai-vault-session-filters'
 import { AiVaultSessionVirtualList } from './AiVaultSessionVirtualList'
-import { useAiVaultPanelTransientState } from './ai-vault-panel-transient-state'
 import {
   markInputQuietSchedulerInput,
   resetInputQuietSchedulerForTest
@@ -93,7 +92,6 @@ function Probe({
   noAgentsSelected?: boolean
 }): React.JSX.Element | null {
   latest = useAiVaultSessionRefresh(paths, host, limit)
-  const disclosure = useAiVaultPanelTransientState(true)
   if (!showList) {
     return null
   }
@@ -110,9 +108,6 @@ function Probe({
     <AiVaultSessionVirtualList
       groups={[{ key: 'rows', label: null, sessions }]}
       collapsedGroups={new Set()}
-      expandedSessionIds={disclosure.expandedSessionIds}
-      onToggleSessionDetails={disclosure.toggleSessionDetails}
-      onExpandSessionDetails={disclosure.expandSessionDetails}
       loading={latest.loading}
       scopePending={latest.scopePending}
       sessionsCount={latest.sessions.length}
